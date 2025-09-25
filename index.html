@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Chat - Connect with Friends!</title>
+    <!-- Google Fonts for child-friendly typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Sendbird JavaScript SDK via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@sendbird/chat@4/dist/index.umd.min.js"></script>
+    
+    <style>
+        /* Child-friendly CSS styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .user-info {
+            background: linear-gradient(45deg, #a8edea, #fed6e3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .user-id {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            margin: 10px 0;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .friend-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .friend-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.3rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: 3px solid #e9ecef;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-family: 'Nunito', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-send {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+        }
+
+        .btn-send:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .chat-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            display: none;
+        }
+
+        .chat-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(45deg, #a8edea, #fed6e3);
+            border-radius: 15px;
+        }
+
+        .chat-header h3 {
+            font-family: 'Fredoka One', cursive;
+            color: #333;
+        }
+
+        .messages-container {
+            height: 300px;
+            overflow-y: auto;
+            border: 3px solid #e9ecef;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .message.own {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.other {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .message-info {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .typing-indicator {
+            font-style: italic;
+            color: #667eea;
+            padding: 10px;
+            display: none;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #cce7ff;
+            color: #0c5aa6;
+            border: 2px solid #b3d7ff;
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>🌟 Kids Chat 🌟</h1>
+            <p>Connect and chat with your friends safely!</p>
+        </div>
+
+        <div class="main-content">
+            <!-- User Information Section -->
+            <div class="user-info">
+                <h3>👋 Your Chat ID</h3>
+                <p>Share this ID with friends so they can chat with you:</p>
+                <div class="user-id" id="userIdDisplay">Generating your ID...</div>
+                <button class="btn btn-primary" onclick="copyUserId()">📋 Copy ID</button>
+            </div>
+
+            <!-- Status Messages -->
+            <div id="statusMessage"></div>
+
+            <!-- Friend Connection Section -->
+            <div class="friend-section">
+                <h3>🤝 Connect with a Friend</h3>
+                <p>Enter your friend's Chat ID to start chatting:</p>
+                <div class="input-group">
+                    <input type="text" id="friendIdInput" placeholder="Enter friend's Chat ID (e.g., user_abc123)" />
+                    <button class="btn btn-primary" onclick="connectToFriend()">Connect</button>
+                </div>
+            </div>
+
+            <!-- Chat Interface (hidden initially) -->
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-header">
+                    <h3>💬 Chat with <span id="friendName">Friend</span></h3>
+                </div>
+                
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Messages will appear here -->
+                </div>
+                
+                <div class="typing-indicator" id="typingIndicator">
+                    Friend is typing...
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="messageInput" placeholder="Type your message here..." 
+                           onkeypress="handleMessageKeyPress(event)" />
+                    <button class="btn btn-send" onclick="sendMessage()">Send 📤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sendbird configuration - REPLACE 'YOUR_APP_ID' with your actual Sendbird App ID
+        const APP_ID = '85CE8B15-75E7-464B-94F7-2CBED6708E2A'; // 🔑 Replace this with your Sendbird App ID
+        
+        // Global variables for Sendbird and chat functionality
+        let sb = null; // Sendbird instance
+        let currentChannel = null; // Current chat channel
+        let currentUser = null; // Current user object
+        let currentUserId = null; // Current user ID string
+        let typingTimer = null; // Timer for typing indicator
+
+        /**
+         * 🚀 Initialize the chat application when page loads
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChat();
+        });
+
+        /**
+         * 🎲 Generate a random unique user ID
+         * Creates an ID like "user_xyz123" for the current user
+         */
+        function generateUserId() {
+            const randomString = Math.random().toString(36).substring(2, 8);
+            return `user_${randomString}`;
+        }
+
+        /**
+         * 💾 Get or create user ID from localStorage
+         * This ensures the same ID is used across browser sessions
+         */
+        function getUserId() {
+            let userId = localStorage.getItem('sendbirdUserId');
+            if (!userId) {
+                userId = generateUserId();
+                localStorage.setItem('sendbirdUserId', userId);
+                console.log('🆕 Generated new user ID:', userId);
+            } else {
+                console.log('📱 Retrieved existing user ID:', userId);
+            }
+            return userId;
+        }
+
+        /**
+         * 🏁 Initialize the entire chat system
+         */
+        async function initializeChat() {
+            try {
+                // Get or generate user ID
+                currentUserId = getUserId();
+                document.getElementById('userIdDisplay').textContent = currentUserId;
+                
+                // Show connecting status
+                showStatus('Connecting to chat service...', 'info');
+                
+                // Initialize Sendbird
+                sb = SendBird.init({
+                    appId: APP_ID,
+                    modules: [new SendBird.GroupChannelModule()]
+                });
+                
+                // Connect user to Sendbird
+                await connectUser();
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize chat:', error);
+                showStatus('Failed to initialize chat. Please check your App ID.', 'error');
+            }
+        }
+
+        /**
+         * 🔌 Connect the current user to Sendbird
+         */
+        async function connectUser() {
+            return new Promise((resolve, reject) => {
+                // Connect user with their unique ID
+                sb.connect(currentUserId, (user, error) => {
+                    if (error) {
+                        console.error('❌ Connection failed:', error);
+                        showStatus('Connection failed. Please try again.', 'error');
+                        reject(error);
+                        return;
+                    }
+                    
+                    console.log('✅ Connected successfully:', user);
+                    currentUser = user;
+                    showStatus('Connected successfully! 🎉', 'success');
+                    resolve(user);
+                });
+            });
+        }
+
+        /**
+         * 📋 Copy user ID to clipboard
+         */
+        function copyUserId() {
+            navigator.clipboard.writeText(currentUserId).then(() => {
+                showStatus('ID copied to clipboard! 📋', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = currentUserId;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showStatus('ID copied to clipboard! 📋', 'success');
+            });
+        }
+
+        /**
+         * 🤝 Connect to a friend and create/join chat channel
+         */
+        async function connectToFriend() {
+            const friendId = document.getElementById('friendIdInput').value.trim();
+            
+            if (!friendId) {
+                showStatus('Please enter a friend\'s Chat ID', 'error');
+                return;
+            }
+            
+            if (friendId === currentUserId) {
+                showStatus('You cannot chat with yourself! 😄', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('Connecting to friend...', 'info');
+                
+                // Create or get existing distinct channel between two users
+                const channelParams = {
+                    invitedUserIds: [friendId],
+                    isDistinct: true, // This ensures only one channel exists between two users
+                    name: `Chat between ${currentUserId} and ${friendId}`,
+                    operatorUserIds: [currentUserId]
+                };
+                
+                sb.groupChannel.createChannel(channelParams, (channel, error) => {
+                    if (error) {
+                        console.error('❌ Failed to create/join channel:', error);
+                        showStatus('Failed to connect to friend. Check the ID and try again.', 'error');
+                        return;
+                    }
+                    
+                    console.log('✅ Channel created/joined:', channel);
+                    currentChannel = channel;
+                    
+                    // Update UI to show friend's name
+                    document.getElementById('friendName').textContent = friendId;
+                    
+                    // Show chat interface
+                    document.getElementById('chatContainer').style.display = 'block';
+                    
+                    // Load previous messages
+                    loadMessages();
+                    
+                    // Set up real-time message listeners
+                    setupMessageListeners();
+                    
+                    showStatus(`Connected with ${friendId}! 💬`, 'success');
+                });
+                
+            } catch (error) {
+                console.error('❌ Error connecting to friend:', error);
+                showStatus('Error connecting to friend', 'error');
+            }
+        }
+
+        /**
+         * 📚 Load previous messages from the channel
+         */
+        function loadMessages() {
+            if (!currentChannel) return;
+            
+            // Create message list query to get previous messages
+            const messageListQuery = currentChannel.createPreviousMessageListQuery({
+                limit: 50,
+                reverse: false
+            });
+            
+            messageListQuery.load((messages, error) => {
+                if (error) {
+                    console.error('❌ Failed to load messages:', error);
+                    return;
+                }
+                
+                console.log('📚 Loaded messages:', messages);
+                
+                // Clear existing messages
+                const container = document.getElementById('messagesContainer');
+                container.innerHTML = '';
+                
+                // Display each message
+                messages.forEach(message => {
+                    displayMessage(message);
+                });
+                
+                // Scroll to bottom
+                scrollToBottom();
+            });
+        }
+
+        /**
+         * 🎧 Set up real-time message listeners
+         */
+        function setupMessageListeners() {
+            // Create channel handler for real-time events
+            const channelHandler = new sb.groupChannel.GroupChannelHandler();
+            
+            // Handle new messages
+            channelHandler.onMessageReceived = (channel, message) => {
+                console.log('📩 New message received:', message);
+                displayMessage(message);
+                scrollToBottom();
+            };
+            
+            // Handle typing indicators
+            channelHandler.onTypingStatusUpdated = (channel) => {
+                const typingUsers = channel.getTypingUsers();
+                const isOtherUserTyping = typingUsers.some(user => user.userId !== currentUserId);
+                
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (isOtherUserTyping) {
+                    typingIndicator.style.display = 'block';
+                } else {
+                    typingIndicator.style.display = 'none';
+                }
+            };
+            
+            // Add handler to Sendbird
+            sb.groupChannel.addGroupChannelHandler('main-handler', channelHandler);
+        }
+
+        /**
+         * 💬 Display a message in the chat container
+         */
+        function displayMessage(message) {
+            const container = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            // Check if message is from current user
+            const isOwnMessage = message.sender.userId === currentUserId;
+            messageDiv.classList.add(isOwnMessage ? 'own' : 'other');
+            
+            // Create message content
+            const messageTime = new Date(message.createdAt).toLocaleTimeString();
+            messageDiv.innerHTML = `
+                <div>${message.message}</div>
+                <div class="message-info">${message.sender.userId} • ${messageTime}</div>
+            `;
+            
+            container.appendChild(messageDiv);
+        }
+
+        /**
+         * 📤 Send a new message
+         */
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const messageText = messageInput.value.trim();
+            
+            if (!messageText || !currentChannel) {
+                return;
+            }
+            
+            // Create message parameters
+            const params = {
+                message: messageText
+            };
+            
+            // Send message through Sendbird
+            currentChannel.sendUserMessage(params, (message, error) => {
+                if (error) {
+                    console.error('❌ Failed to send message:', error);
+                    showStatus('Failed to send message', 'error');
+                    return;
+                }
+                
+                console.log('✅ Message sent:', message);
+                
+                // Clear input field
+                messageInput.value = '';
+                
+                // Display the sent message
+                displayMessage(message);
+                scrollToBottom();
+                
+                // Stop typing indicator
+                if (currentChannel) {
+                    currentChannel.endTyping();
+                }
+            });
+        }
+
+        /**
+         * ⌨️ Handle Enter key press in message input
+         */
+        function handleMessageKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+                return;
+            }
+            
+            // Handle typing indicator
+            if (currentChannel) {
+                currentChannel.startTyping();
+                
+                // Clear existing timer
+                if (typingTimer) {
+                    clearTimeout(typingTimer);
+                }
+                
+                // Set timer to stop typing indicator after 1 second of inactivity
+                typingTimer = setTimeout(() => {
+                    if (currentChannel) {
+                        currentChannel.endTyping();
+                    }
+                }, 1000);
+            }
+        }
+
+        /**
+         * 📜 Scroll chat container to bottom
+         */
+        function scrollToBottom() {
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        /**
+         * 📢 Show status messages to user
+         */
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                }, 3000);
+            }
+        }
+
+        /**
+         * 🧹 Cleanup function (optional)
+         * Call this when leaving the page to clean up resources
+         */
+        function cleanup() {
+            if (sb) {
+                sb.groupChannel.removeGroupChannelHandler('main-handler');
+                sb.disconnect();
+            }
+        }
+
+        // Clean up when page is about to unload
+        window.addEventListener('beforeunload', cleanup);
+    </script>
+</body>
+</html>
