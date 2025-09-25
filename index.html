@@ -7,7 +7,7 @@
     <!-- Google Fonts for child-friendly typography -->
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Sendbird JavaScript SDK via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@sendbird/chat@4/dist/index.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sendbird@3.1.0/dist/Sendbird.min.js"></script>
     
     <style>
         /* Child-friendly CSS styling */
@@ -371,9 +371,8 @@
                 showStatus('Connecting to chat service...', 'info');
                 
                 // Initialize Sendbird
-                sb = SendBird.init({
-                    appId: APP_ID,
-                    modules: [new SendBird.GroupChannelModule()]
+                sb = new SendBird({
+                    appId: APP_ID
                 });
                 
                 // Connect user to Sendbird
@@ -452,7 +451,7 @@
                     operatorUserIds: [currentUserId]
                 };
                 
-                sb.groupChannel.createChannel(channelParams, (channel, error) => {
+                sb.GroupChannel.createChannel(channelParams, (channel, error) => {
                     if (error) {
                         console.error('❌ Failed to create/join channel:', error);
                         showStatus('Failed to connect to friend. Check the ID and try again.', 'error');
@@ -522,7 +521,7 @@
          */
         function setupMessageListeners() {
             // Create channel handler for real-time events
-            const channelHandler = new sb.groupChannel.GroupChannelHandler();
+            const channelHandler = new sb.GroupChannelHandler();
             
             // Handle new messages
             channelHandler.onMessageReceived = (channel, message) => {
@@ -545,7 +544,7 @@
             };
             
             // Add handler to Sendbird
-            sb.groupChannel.addGroupChannelHandler('main-handler', channelHandler);
+            sb.addGroupChannelHandler('main-handler', channelHandler);
         }
 
         /**
@@ -666,7 +665,7 @@
          */
         function cleanup() {
             if (sb) {
-                sb.groupChannel.removeGroupChannelHandler('main-handler');
+                sb.removeGroupChannelHandler('main-handler');
                 sb.disconnect();
             }
         }
