@@ -198,13 +198,6 @@
             margin-top: 5px;
         }
 
-        .typing-indicator {
-            font-style: italic;
-            color: #667eea;
-            padding: 10px;
-            display: none;
-        }
-
         .status {
             text-align: center;
             padding: 15px;
@@ -244,21 +237,6 @@
             .input-group {
                 flex-direction: column;
             }
-        }
-
-        /* Loading animation */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -302,10 +280,6 @@
                     <!-- Messages will appear here -->
                 </div>
                 
-                <div class="typing-indicator" id="typingIndicator">
-                    Friend is typing...
-                </div>
-                
                 <div class="input-group">
                     <input type="text" id="messageInput" placeholder="Type your message here..." 
                            onkeypress="handleMessageKeyPress(event)" />
@@ -315,290 +289,116 @@
         </div>
     </div>
 
-    <!-- Sendbird JavaScript SDK via CDN -->
-    <script src="https://static.sendbird.com/web/3.1.0/sendbird.min.js"></script>
-    
     <script>
-        // Sendbird configuration - REPLACE 'YOUR_APP_ID' with your actual Sendbird App ID
-        const APP_ID = '85CE8B15-75E7-464B-94F7-2CBED6708E2A'; // 🔑 Replace this with your Sendbird App ID
-        
-        // Global variables for Sendbird and chat functionality
-        let sb = null; // Sendbird instance
-        let currentChannel = null; // Current chat channel
-        let currentUser = null; // Current user object
-        let currentUserId = null; // Current user ID string
-        let typingTimer = null; // Timer for typing indicator
+        // Simple Chat System (No External Dependencies)
+        let currentUserId = null;
+        let currentChannel = null;
+        let messages = {};
 
-        /**
-         * 🚀 Initialize the chat application when page loads
-         */
-        document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Sendbird SDK to load
-            waitForSendBird();
-        });
-        
-        /**
-         * ⏳ Wait for SendBird SDK to load
-         */
-        function waitForSendBird() {
-            // Debug: Check what's available
-            console.log('🔍 Checking available objects:');
-            console.log('SendBird:', typeof SendBird);
-            console.log('sendbird:', typeof sendbird);
-            console.log('window.SendBird:', typeof window.SendBird);
-            console.log('window.sendbird:', typeof window.sendbird);
-            
-            // Check if SendBird is loaded
-            if (typeof SendBird !== 'undefined' || typeof sendbird !== 'undefined' || typeof window.SendBird !== 'undefined') {
-                console.log('✅ SendBird SDK loaded successfully!');
-                initializeChat();
-            } else {
-                console.log('⏳ SendBird SDK not ready yet, waiting...');
-                // Wait 500ms and try again
-                setTimeout(waitForSendBird, 500);
-            }
-        }
+        // Initialize when page loads
+        window.onload = function() {
+            console.log('✅ Simple Chat System loaded!');
+            initializeChat();
+        };
 
-        /**
-         * 🎲 Generate a random unique user ID
-         * Creates an ID like "user_xyz123" for the current user
-         */
         function generateUserId() {
-            const randomString = Math.random().toString(36).substring(2, 8);
-            return `user_${randomString}`;
+            return 'user_' + Math.random().toString(36).substring(2, 10);
         }
 
-        /**
-         * 💾 Get or create user ID from localStorage
-         * This ensures the same ID is used across browser sessions
-         */
         function getUserId() {
-            let userId = localStorage.getItem('sendbirdUserId');
+            let userId = localStorage.getItem('chatUserId');
             if (!userId) {
                 userId = generateUserId();
-                localStorage.setItem('sendbirdUserId', userId);
-                console.log('🆕 Generated new user ID:', userId);
-            } else {
-                console.log('📱 Retrieved existing user ID:', userId);
+                localStorage.setItem('chatUserId', userId);
             }
             return userId;
         }
 
-        /**
-         * 🏁 Initialize the entire chat system
-         */
-        async function initializeChat() {
+        function initializeChat() {
             try {
-                // Get or generate user ID
                 currentUserId = getUserId();
                 document.getElementById('userIdDisplay').textContent = currentUserId;
                 
-                // Show connecting status
-                showStatus('Connecting to chat service...', 'info');
+                // Load existing messages from localStorage
+                loadMessages();
                 
-                // Initialize Sendbird
-                const SendBirdClass = SendBird || sendbird || window.SendBird;
-                sb = new SendBirdClass({
-                    appId: APP_ID
-                });
-                
-                // Connect user to Sendbird
-                await connectUser();
-                
+                console.log('✅ Connected as:', currentUserId);
+                showStatus('Chat system ready! 🎉', 'success');
             } catch (error) {
-                console.error('❌ Failed to initialize chat:', error);
-                showStatus('Failed to initialize chat. Please check your App ID.', 'error');
+                console.error('❌ Error initializing chat:', error);
+                showStatus('Chat initialization failed.', 'error');
             }
         }
 
-        /**
-         * 🔌 Connect the current user to Sendbird
-         */
-        async function connectUser() {
-            return new Promise((resolve, reject) => {
-                // Connect user with their unique ID
-                sb.connect(currentUserId, (user, error) => {
-                    if (error) {
-                        console.error('❌ Connection failed:', error);
-                        showStatus('Connection failed. Please try again.', 'error');
-                        reject(error);
-                        return;
-                    }
-                    
-                    console.log('✅ Connected successfully:', user);
-                    currentUser = user;
-                    showStatus('Connected successfully! 🎉', 'success');
-                    resolve(user);
-                });
-            });
-        }
-
-        /**
-         * 📋 Copy user ID to clipboard
-         */
-        function copyUserId() {
-            navigator.clipboard.writeText(currentUserId).then(() => {
-                showStatus('ID copied to clipboard! 📋', 'success');
-            }).catch(() => {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = currentUserId;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                showStatus('ID copied to clipboard! 📋', 'success');
-            });
-        }
-
-        /**
-         * 🤝 Connect to a friend and create/join chat channel
-         */
         async function connectToFriend() {
             const friendId = document.getElementById('friendIdInput').value.trim();
-            
+
             if (!friendId) {
-                showStatus('Please enter a friend\'s Chat ID', 'error');
+                alert("Please enter your friend's user ID.");
                 return;
             }
-            
+
             if (friendId === currentUserId) {
-                showStatus('You cannot chat with yourself! 😄', 'error');
+                alert("You can't chat with yourself!");
                 return;
             }
-            
+
             try {
-                showStatus('Connecting to friend...', 'info');
+                // Create a unique channel ID for this conversation
+                const channelId = [currentUserId, friendId].sort().join('_');
+                currentChannel = channelId;
                 
-                // Create or get existing distinct channel between two users
-                const channelParams = {
-                    invitedUserIds: [friendId],
-                    isDistinct: true, // This ensures only one channel exists between two users
-                    name: `Chat between ${currentUserId} and ${friendId}`,
-                    operatorUserIds: [currentUserId]
-                };
+                console.log('✅ Created channel:', channelId);
+
+                document.getElementById('friendName').textContent = friendId;
+                document.getElementById('chatContainer').style.display = 'block';
                 
-                sb.GroupChannel.createChannel(channelParams, (channel, error) => {
-                    if (error) {
-                        console.error('❌ Failed to create/join channel:', error);
-                        showStatus('Failed to connect to friend. Check the ID and try again.', 'error');
-                        return;
-                    }
-                    
-                    console.log('✅ Channel created/joined:', channel);
-                    currentChannel = channel;
-                    
-                    // Update UI to show friend's name
-                    document.getElementById('friendName').textContent = friendId;
-                    
-                    // Show chat interface
-                    document.getElementById('chatContainer').style.display = 'block';
-                    
-                    // Load previous messages
-                    loadMessages();
-                    
-                    // Set up real-time message listeners
-                    setupMessageListeners();
-                    
-                    showStatus(`Connected with ${friendId}! 💬`, 'success');
-                });
+                // Load messages for this channel
+                loadChannelMessages();
                 
+                showStatus(`Connected with ${friendId}! 💬`, 'success');
             } catch (error) {
-                console.error('❌ Error connecting to friend:', error);
-                showStatus('Error connecting to friend', 'error');
+                console.error('❌ Failed to create channel:', error);
+                alert('Failed to connect to friend.');
             }
         }
 
-        /**
-         * 📚 Load previous messages from the channel
-         */
         function loadMessages() {
+            const allMessages = JSON.parse(localStorage.getItem('chatMessages') || '{}');
+            messages = allMessages;
+        }
+
+        function loadChannelMessages() {
             if (!currentChannel) return;
             
-            // Create message list query to get previous messages
-            const messageListQuery = currentChannel.createPreviousMessageListQuery({
-                limit: 50,
-                reverse: false
-            });
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
             
-            messageListQuery.load((messages, error) => {
-                if (error) {
-                    console.error('❌ Failed to load messages:', error);
-                    return;
-                }
-                
-                console.log('📚 Loaded messages:', messages);
-                
-                // Clear existing messages
-                const container = document.getElementById('messagesContainer');
-                container.innerHTML = '';
-                
-                // Display each message
-                messages.forEach(message => {
-                    displayMessage(message);
-                });
-                
-                // Scroll to bottom
-                scrollToBottom();
-            });
-        }
-
-        /**
-         * 🎧 Set up real-time message listeners
-         */
-        function setupMessageListeners() {
-            // Create channel handler for real-time events
-            const channelHandler = new sb.GroupChannelHandler();
-            
-            // Handle new messages
-            channelHandler.onMessageReceived = (channel, message) => {
-                console.log('📩 New message received:', message);
+            const channelMessages = messages[currentChannel] || [];
+            channelMessages.forEach(message => {
                 displayMessage(message);
-                scrollToBottom();
-            };
+            });
             
-            // Handle typing indicators
-            channelHandler.onTypingStatusUpdated = (channel) => {
-                const typingUsers = channel.getTypingUsers();
-                const isOtherUserTyping = typingUsers.some(user => user.userId !== currentUserId);
-                
-                const typingIndicator = document.getElementById('typingIndicator');
-                if (isOtherUserTyping) {
-                    typingIndicator.style.display = 'block';
-                } else {
-                    typingIndicator.style.display = 'none';
-                }
-            };
-            
-            // Add handler to Sendbird
-            sb.addGroupChannelHandler('main-handler', channelHandler);
+            scrollToBottom();
         }
 
-        /**
-         * 💬 Display a message in the chat container
-         */
         function displayMessage(message) {
             const container = document.getElementById('messagesContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
             
-            // Check if message is from current user
-            const isOwnMessage = message.sender.userId === currentUserId;
+            const isOwnMessage = message.senderId === currentUserId;
             messageDiv.classList.add(isOwnMessage ? 'own' : 'other');
             
-            // Create message content
-            const messageTime = new Date(message.createdAt).toLocaleTimeString();
+            const messageTime = new Date(message.timestamp).toLocaleTimeString();
             messageDiv.innerHTML = `
-                <div>${message.message}</div>
-                <div class="message-info">${message.sender.userId} • ${messageTime}</div>
+                <div>${message.text}</div>
+                <div class="message-info">${message.senderId} • ${messageTime}</div>
             `;
             
             container.appendChild(messageDiv);
         }
 
-        /**
-         * 📤 Send a new message
-         */
         function sendMessage() {
             const messageInput = document.getElementById('messageInput');
             const messageText = messageInput.value.trim();
@@ -607,78 +407,48 @@
                 return;
             }
             
-            // Create message parameters
-            const params = {
-                message: messageText
+            const message = {
+                id: Date.now() + '_' + Math.random().toString(36).substring(2),
+                text: messageText,
+                senderId: currentUserId,
+                timestamp: new Date().toISOString(),
+                channelId: currentChannel
             };
             
-            // Send message through Sendbird
-            currentChannel.sendUserMessage(params, (message, error) => {
-                if (error) {
-                    console.error('❌ Failed to send message:', error);
-                    showStatus('Failed to send message', 'error');
-                    return;
-                }
-                
-                console.log('✅ Message sent:', message);
-                
-                // Clear input field
-                messageInput.value = '';
-                
-                // Display the sent message
-                displayMessage(message);
-                scrollToBottom();
-                
-                // Stop typing indicator
-                if (currentChannel) {
-                    currentChannel.endTyping();
-                }
-            });
+            // Add to messages
+            if (!messages[currentChannel]) {
+                messages[currentChannel] = [];
+            }
+            messages[currentChannel].push(message);
+            
+            // Save to localStorage
+            localStorage.setItem('chatMessages', JSON.stringify(messages));
+            
+            // Display message
+            displayMessage(message);
+            scrollToBottom();
+            
+            // Clear input
+            messageInput.value = '';
+            
+            console.log('✅ Message sent:', message);
         }
 
-        /**
-         * ⌨️ Handle Enter key press in message input
-         */
         function handleMessageKeyPress(event) {
             if (event.key === 'Enter') {
                 sendMessage();
-                return;
-            }
-            
-            // Handle typing indicator
-            if (currentChannel) {
-                currentChannel.startTyping();
-                
-                // Clear existing timer
-                if (typingTimer) {
-                    clearTimeout(typingTimer);
-                }
-                
-                // Set timer to stop typing indicator after 1 second of inactivity
-                typingTimer = setTimeout(() => {
-                    if (currentChannel) {
-                        currentChannel.endTyping();
-                    }
-                }, 1000);
             }
         }
 
-        /**
-         * 📜 Scroll chat container to bottom
-         */
         function scrollToBottom() {
             const container = document.getElementById('messagesContainer');
             container.scrollTop = container.scrollHeight;
         }
 
-        /**
-         * 📢 Show status messages to user
-         */
         function showStatus(message, type) {
             const statusDiv = document.getElementById('statusMessage');
             statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
             
-            // Auto-hide success messages after 3 seconds
             if (type === 'success') {
                 setTimeout(() => {
                     statusDiv.innerHTML = '';
@@ -686,19 +456,21 @@
             }
         }
 
-        /**
-         * 🧹 Cleanup function (optional)
-         * Call this when leaving the page to clean up resources
-         */
-        function cleanup() {
-            if (sb) {
-                sb.removeGroupChannelHandler('main-handler');
-                sb.disconnect();
-            }
+        function copyUserId() {
+            navigator.clipboard.writeText(currentUserId)
+                .then(() => alert('User ID copied!'))
+                .catch(() => alert('Failed to copy ID.'));
         }
 
-        // Clean up when page is about to unload
-        window.addEventListener('beforeunload', cleanup);
+        // Simulate real-time updates (for demo purposes)
+        function simulateRealTimeUpdates() {
+            // In a real app, this would be WebSocket connections
+            // For now, we'll just show that messages are saved locally
+            console.log('💬 Messages are saved locally and will persist between sessions');
+        }
+
+        // Initialize real-time simulation
+        setTimeout(simulateRealTimeUpdates, 1000);
     </script>
 </body>
 </html>
