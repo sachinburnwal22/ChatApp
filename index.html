@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kids Chat - Connect with Friends!</title>
+    <!-- Suppress favicon 404 error -->
+    <link rel="icon" href="data:," />
     <!-- Google Fonts for child-friendly typography -->
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sendbird JavaScript SDK via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/sendbird@3.1.0/dist/Sendbird.min.js"></script>
     
     <style>
         /* Child-friendly CSS styling */
@@ -315,6 +315,9 @@
         </div>
     </div>
 
+    <!-- Sendbird JavaScript SDK via CDN -->
+    <script src="https://static.sendbird.com/web/3.1.0/sendbird.min.js"></script>
+    
     <script>
         // Sendbird configuration - REPLACE 'YOUR_APP_ID' with your actual Sendbird App ID
         const APP_ID = '85CE8B15-75E7-464B-94F7-2CBED6708E2A'; // 🔑 Replace this with your Sendbird App ID
@@ -330,8 +333,31 @@
          * 🚀 Initialize the chat application when page loads
          */
         document.addEventListener('DOMContentLoaded', function() {
-            initializeChat();
+            // Wait for Sendbird SDK to load
+            waitForSendBird();
         });
+        
+        /**
+         * ⏳ Wait for SendBird SDK to load
+         */
+        function waitForSendBird() {
+            // Debug: Check what's available
+            console.log('🔍 Checking available objects:');
+            console.log('SendBird:', typeof SendBird);
+            console.log('sendbird:', typeof sendbird);
+            console.log('window.SendBird:', typeof window.SendBird);
+            console.log('window.sendbird:', typeof window.sendbird);
+            
+            // Check if SendBird is loaded
+            if (typeof SendBird !== 'undefined' || typeof sendbird !== 'undefined' || typeof window.SendBird !== 'undefined') {
+                console.log('✅ SendBird SDK loaded successfully!');
+                initializeChat();
+            } else {
+                console.log('⏳ SendBird SDK not ready yet, waiting...');
+                // Wait 500ms and try again
+                setTimeout(waitForSendBird, 500);
+            }
+        }
 
         /**
          * 🎲 Generate a random unique user ID
@@ -371,7 +397,8 @@
                 showStatus('Connecting to chat service...', 'info');
                 
                 // Initialize Sendbird
-                sb = new SendBird({
+                const SendBirdClass = SendBird || sendbird || window.SendBird;
+                sb = new SendBirdClass({
                     appId: APP_ID
                 });
                 
